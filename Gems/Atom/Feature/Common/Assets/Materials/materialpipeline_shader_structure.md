@@ -59,10 +59,10 @@ The `BasePBR.materialtype` defines `lightingModel`: `Base`, `materialShaderDefin
     - `void FinalizeLightingData(Surface surface, inout LightingData lightingData);`
 
 
-### Inheritance in HLSL
-Inheritance doesn't work in `hlsl`, so you can often see some define magic like this to archieve a similar effect:
+### Excursion: Inheritance in HLSL
 
-in `BasePBR_VertexEval.azsli`
+Inheritance is not supported in [HLSL](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl). Sometimes, some "define magic" is used to achieve a similar effect like, e.g., the following in `BasePBR_VertexEval.azsli`:
+
 ```cpp
 #ifndef EvaluateVertexGeometry
 #define EvaluateVertexGeometry EvaluateVertexGeometry_BasePBR
@@ -72,9 +72,9 @@ VsOutput EvaluateVertexGeometry_BasePBR()
 ...
 ```
 
-This way we can in e.g. `StandardPBR_VertexEval.azsli` use `#define EvaluateVertexGeometry EvaluateVertexGeometry_StandardPBR` before we including the BasePBR - file,
-which allows us to call `EvaluateVertexGeometry_BasePBR()` from within the `EvaluateVertexGeometry_StandardPBR()` function, in addition to our own shader code. 
-And in the rest of the shader code we can call `EvaluateVertexGeometry()` and don't need to pay attention to what function is actually called there.
+This way, `#define EvaluateVertexGeometry EvaluateVertexGeometry_StandardPBR` can be used in `StandardPBR_VertexEval.azsli` before including the BasePBR file.
+This allows to call `EvaluateVertexGeometry_BasePBR()` from within the `EvaluateVertexGeometry_StandardPBR()` function, in addition to our own shader code. 
+In the rest of the shader code, `EvaluateVertexGeometry()` can be called in an agnostic way w.r.t. which function is actually called in these places.
 
 ### ForwardPass_BaseLighting.azsli as a specific example for the Material Interface
 

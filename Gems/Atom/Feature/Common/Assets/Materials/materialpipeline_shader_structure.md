@@ -34,27 +34,27 @@ The `BasePBR.materialtype` defines `lightingModel`: `Base`, `materialShaderDefin
 ### Material Interface Basics
 
 - `VsOutput EvaluateVertexGeometry(VsInput IN, VsSystemValues SV, const MaterialParameters params);`
-  - Generally called in the vertex-shader, and is supposed to provide the vertices in normalized device coordinates.
-  - The structs `VsInput` and `VsOutput` are defined by the shader template, but can be controlled with various defines, e.g. `PIPELINE_VERTEX_POSITION` or `PIPELINE_VERTEX_NORMAL`.
+  - Generally called in the vertex shader, and is supposed to provide the vertices in normalized device coordinates.
+  - The structs `VsInput` and `VsOutput` are defined by the shader template, but can be controlled with various defines, e.g., `PIPELINE_VERTEX_POSITION` or `PIPELINE_VERTEX_NORMAL`.
   - The struct `MaterialParameters` is defined by the material.
   - The struct `VsSystemValues` is defined by the shader template, and should be treated as opaque by the material.
 - `PixelGeometryData EvaluatePixelGeometry(VsOutput IN, VsSystemValues SV, bool isFrontFace, const MaterialParameters params);`
   - Generally called in the pixel shader, forwards values from the `VsOutput` struct, and constructs the per-pixel tangent frame. 
-  - Used to decouple the pipeline-specific Vertex-Data from the more generic  be used to procedurally generate geometry, or to prepare input for a more generic `EvaluateSurface`.
+  - Used to decouple the pipeline-specific vertex data from the more generic --------------> TODO? <------------ be used to procedurally generate geometry, or to prepare input for a more generic `EvaluateSurface`.
   - The struct `PixelGeometryData` is defined by the material, and opaque to the shader template.
 - `Surface EvaluateSurface(VsOutput IN, VsSystemValues SV, PixelGeometryData geoData);`
-  - Generally called in the pixel shader, mostly samples textures.
-  - The struct `Surface` is defined by the material, but needs to provide a few members, e.g. `position`.
+  - Generally called in the pixel shader. It mostly samples textures.
+  - The struct `Surface` is defined by the material. It needs to provide a few fixed members, e.g., `position`.
 - `LightingData EvaluateLighting(Surface surface, IN.position, ViewSrg::m_worldPosition.xyz);`
   - Generally called in the pixel shader, and is supposed to calculate the final shading.
-  - The struct `LightingData` is defined by the material, but needs to provide a few members, e.g. `diffuseLighting`.
-  - Defined by the shader template and iterates over the assigned lights and evaluates the shadows.
+  - The struct `LightingData` is defined by the material. It needs to provide a few fixed members, e.g., `diffuseLighting`.
+  - Defined by the shader template. It iterates over the assigned lights and evaluates the shadows.
   - Uses several material-defined functions:
     - `void InitializeLightingData(Surface surface, float3 viewPosition, inout LightingData lightingData);`
-    - Expects a `<LightType>Util` - class for each light-type with several functions that are specific to each light type, but mostly boil down to:
+    - Expects a `<LightType>Util` class for each light type with several functions that are specific to each light type, but mostly boil down to:
       - `static <LightType>Util Init(<LightType> light, Surface surface, float3 cameraPositionWS);`
       - `real GetFalloff();`
-        - The Falloff - value is used to skip a light before potentially costly shadow evaluations are performed.
+        - The falloff value is used to skip a light before potentially costly shadow evaluations are performed.
       - `void Apply(<LightType> light, Surface surface, real litRatio, inout LightingData lightingData);`
     - `void FinalizeLightingData(Surface surface, inout LightingData lightingData);`
 

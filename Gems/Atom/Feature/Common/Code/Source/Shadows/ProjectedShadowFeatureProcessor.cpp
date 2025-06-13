@@ -223,6 +223,16 @@ namespace AZ::Render
         m_filterParameterNeedsUpdate = true;
     }
 
+    AZ::Data::Instance<RPI::AttachmentImage> ProjectedShadowFeatureProcessor::GetAtlasImage()
+    {
+        return m_atlasImage;
+    }
+
+    AZ::Data::Instance<RPI::AttachmentImage> ProjectedShadowFeatureProcessor::GetEsmAtlasImage()
+    {
+        return m_esmAtlasImage;
+    }
+
     void ProjectedShadowFeatureProcessor::SetShadowFilterMethod(ShadowId id, ShadowFilterMethod method)
     {
         AZ_Assert(id.IsValid(), "Invalid ShadowId passed to ProjectedShadowFeatureProcessor::SetShadowFilterMethod().");

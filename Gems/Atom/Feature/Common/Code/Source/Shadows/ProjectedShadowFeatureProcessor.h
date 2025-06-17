@@ -63,8 +63,15 @@ namespace AZ::Render
 
         void SetEsmExponent(ShadowId id, float exponent);
 
+        void RemoveCachedPasses(RPI::RenderPipeline* renderPipeline, AZ::Name projTemplateName, AZ::Name esmTemplateName) override;
+        void UpdatePrimaryPasses();
+        bool PassesContainRenderPipeline(AZ::RPI::RenderPipeline* renderPipeline) override;
+        void AddOrSetProjectedShadowmapPass(AZ::RPI::RenderPipeline* renderPipeline, AZ::Render::ProjectedShadowmapsPass* shadowmapPass) override;
+
         AZ::Data::Instance<RPI::AttachmentImage> GetAtlasImage() override;
         AZ::Data::Instance<RPI::AttachmentImage> GetEsmAtlasImage() override;
+
+        void SetTemplateNames(AZ::Name projectedShadowmapsTemplateName, AZ::Name esmShadowmapsTemplateName) override;
 
     private:
 
@@ -106,9 +113,7 @@ namespace AZ::Render
             
         // Functions for caching the ProjectedShadowmapsPass and EsmShadowmapsPass.
         void CheckRemovePrimaryPasses(RPI::RenderPipeline* renderPipeline);
-        void RemoveCachedPasses(RPI::RenderPipeline* renderPipeline);
         void CachePasses(RPI::RenderPipeline* renderPipeline);
-        void UpdatePrimaryPasses();
             
         //! Functions to update the parameter of Gaussian filter used in ESM.
         void UpdateFilterParameters();
@@ -164,5 +169,8 @@ namespace AZ::Render
         bool m_deviceBufferNeedsUpdate = false;
         bool m_shadowmapPassNeedsUpdate = true;
         bool m_filterParameterNeedsUpdate = false;
+
+        AZ::Name m_projectedShadowmapsTemplateName{ "ProjectedShadowmapsTemplate" };
+        AZ::Name m_esmShadowmapsTemplateName{ "EsmShadowmapsTemplate" };
     };
 }

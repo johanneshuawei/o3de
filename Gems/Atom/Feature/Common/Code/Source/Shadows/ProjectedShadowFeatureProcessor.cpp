@@ -233,6 +233,12 @@ namespace AZ::Render
         return m_esmAtlasImage;
     }
 
+    void ProjectedShadowFeatureProcessor::SetTemplateNames(AZ::Name projectedShadowmapsTemplateName, AZ::Name esmShadowmapsTemplateName)
+    {
+        m_projectedShadowmapsTemplateName = projectedShadowmapsTemplateName;
+        m_esmShadowmapsTemplateName       = esmShadowmapsTemplateName;
+    }
+
     void ProjectedShadowFeatureProcessor::SetShadowFilterMethod(ShadowId id, ShadowFilterMethod method)
     {
         AZ_Assert(id.IsValid(), "Invalid ShadowId passed to ProjectedShadowFeatureProcessor::SetShadowFilterMethod().");
@@ -377,7 +383,7 @@ namespace AZ::Render
         }
         if (changeType == RPI::SceneNotification::RenderPipelineChangeType::Removed || changeType == RPI::SceneNotification::RenderPipelineChangeType::PassChanged)
         {
-            RemoveCachedPasses(renderPipeline);
+            RemoveCachedPasses(renderPipeline, m_projectedShadowmapsTemplateName, m_esmShadowmapsTemplateName);
         }
         if (changeType == RPI::SceneNotification::RenderPipelineChangeType::Added || changeType == RPI::SceneNotification::RenderPipelineChangeType::PassChanged)
         {
@@ -404,7 +410,7 @@ namespace AZ::Render
         }
     }
 
-    void ProjectedShadowFeatureProcessor::RemoveCachedPasses(RPI::RenderPipeline* renderPipeline)
+    void ProjectedShadowFeatureProcessor::RemoveCachedPasses(RPI::RenderPipeline* renderPipeline, AZ::Name projTemplateName, AZ::Name esmTemplateName)
     {
         m_projectedShadowmapsPasses.erase(renderPipeline);
         m_esmShadowmapsPasses.erase(renderPipeline);
@@ -413,7 +419,7 @@ namespace AZ::Render
         // projected shadow pass was altered or removed as part of that change.
         if (renderPipeline == m_primaryShadowPipeline && m_primaryProjectedShadowmapsPass != nullptr)
         {
-            RPI::PassFilter projectedPassFilter = RPI::PassFilter::CreateWithTemplateName(AZ_NAME_LITERAL("ProjectedShadowmapsTemplate"), renderPipeline);
+            RPI::PassFilter projectedPassFilter = RPI::PassFilter::CreateWithTemplateName(projTemplateName, renderPipeline);
             bool primaryPassChanged = true;
             RPI::PassSystemInterface::Get()->ForEachPass(projectedPassFilter,
                 [&](RPI::Pass* pass) -> RPI::PassFilterExecutionFlow
@@ -427,7 +433,7 @@ namespace AZ::Render
                 m_primaryProjectedShadowmapsPass = nullptr;
 
                 // Check to see if the esm pass still exists on this pipeline. If so, turn it off before setting the pointer to null.
-                RPI::PassFilter esmPassFilter = RPI::PassFilter::CreateWithTemplateName(AZ_NAME_LITERAL("EsmShadowmapsTemplate"), renderPipeline);
+                RPI::PassFilter esmPassFilter = RPI::PassFilter::CreateWithTemplateName(esmTemplateName, renderPipeline);
                 RPI::PassSystemInterface::Get()->ForEachPass(esmPassFilter,
                     [&](RPI::Pass* pass) -> RPI::PassFilterExecutionFlow
                     {
@@ -446,16 +452,18 @@ namespace AZ::Render
     void ProjectedShadowFeatureProcessor::CachePasses(RPI::RenderPipeline* renderPipeline)
     {
         // Find the Projected Shadow pass in a given render pipeline and update it.
-        RPI::PassFilter projectedPassFilter = RPI::PassFilter::CreateWithTemplateName(AZ_NAME_LITERAL("ProjectedShadowmapsTemplate"), renderPipeline);
+        RPI::PassFilter projectedPassFilter = RPI::PassFilter::CreateWithTemplateName(m_projectedShadowmapsTemplateName, renderPipeline);
         RPI::PassSystemInterface::Get()->ForEachPass(projectedPassFilter,
             [&](RPI::Pass* pass) -> RPI::PassFilterExecutionFlow
             {
+                ProjectedShadowmapsPass* shadowmapPass = static_cast<ProjectedShadowmapsPass*>(pass);
                 if (m_projectedShadowmapsPasses.contains(renderPipeline))
                 {
-                    AZ_Error("ProjectedShadowFeatureProcessor", false, "Found multiple projected shadowmap passes in pipeline.");
+                    // AZ_Error("ProjectedShadowFeatureProcessor", false, "Found multiple projected shadowmap passes in pipeline.");
+                    //              ^^^  WHY is this an error?
+                    shadowmapPass->SetAtlasAttachmentImage(m_atlasImage);
                     return RPI::PassFilterExecutionFlow::StopVisitingPasses;
                 }
-                ProjectedShadowmapsPass* shadowmapPass = static_cast<ProjectedShadowmapsPass*>(pass);
                 shadowmapPass->SetAtlasAttachmentImage(m_atlasImage);
                 m_projectedShadowmapsPasses[renderPipeline] = shadowmapPass;
 
@@ -464,7 +472,7 @@ namespace AZ::Render
         );
 
         // Find the ESM shadow pass in a given render pipeline and update it.
-        RPI::PassFilter esmPassFilter = RPI::PassFilter::CreateWithTemplateName(AZ_NAME_LITERAL("EsmShadowmapsTemplate"), renderPipeline);
+        RPI::PassFilter esmPassFilter = RPI::PassFilter::CreateWithTemplateName(m_esmShadowmapsTemplateName, renderPipeline);
         RPI::PassSystemInterface::Get()->ForEachPass(esmPassFilter,
             [&](RPI::Pass* pass) -> RPI::PassFilterExecutionFlow
             {
@@ -548,7 +556,7 @@ namespace AZ::Render
         {
             // Either there's no primary projected shadowmaps pass, or there is but there's no esm pass on the same pipeline, so disable
             // the primary esm pass if necessary.
-            RPI::PassFilter esmPassFilter = RPI::PassFilter::CreateWithTemplateName(AZ_NAME_LITERAL("EsmShadowmapsTemplate"), m_primaryShadowPipeline);
+            RPI::PassFilter esmPassFilter = RPI::PassFilter::CreateWithTemplateName(m_esmShadowmapsTemplateName, m_primaryShadowPipeline);
             RPI::PassSystemInterface::Get()->ForEachPass(esmPassFilter,
                 [&](RPI::Pass* pass) -> RPI::PassFilterExecutionFlow
                 {
@@ -870,6 +878,16 @@ namespace AZ::Render
         {
             m_esmAtlasImage = {};
         }
+    }
+
+    bool ProjectedShadowFeatureProcessor::PassesContainRenderPipeline(AZ::RPI::RenderPipeline* renderPipeline)
+    {
+        return m_projectedShadowmapsPasses.contains(renderPipeline);
+    }
+
+    void ProjectedShadowFeatureProcessor::AddOrSetProjectedShadowmapPass(AZ::RPI::RenderPipeline* renderPipeline, ProjectedShadowmapsPass* shadowmapPass)
+    {
+        m_projectedShadowmapsPasses[renderPipeline] = shadowmapPass;
     }
 
     RPI::Ptr<ShadowmapPass> ProjectedShadowFeatureProcessor::CreateShadowmapPass(size_t childIndex)

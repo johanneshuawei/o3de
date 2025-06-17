@@ -12,6 +12,8 @@
 #include <AzCore/Math/Vector3.h>
 #include <AzCore/Math/Transform.h>
 #include <Atom/Feature/CoreLights/ShadowConstants.h>
+#include <Atom/Feature/CoreLights/ProjectedShadowmapsPass.h>
+
 
 namespace AZ::Render
 {
@@ -87,9 +89,16 @@ namespace AZ::Render
         //! Gets the current shadow properties. Useful for updating several properties at once in SetShadowProperties() without having to set every property.
         virtual const ProjectedShadowDescriptor& GetShadowProperties(ShadowId id) = 0;
 
+        virtual void RemoveCachedPasses(RPI::RenderPipeline* renderPipeline, AZ::Name projTemplateName, AZ::Name esmTemplateName) = 0;
+        virtual void UpdatePrimaryPasses() = 0;
+        virtual bool PassesContainRenderPipeline(AZ::RPI::RenderPipeline* renderPipeline) = 0;
+        virtual void AddOrSetProjectedShadowmapPass(AZ::RPI::RenderPipeline* renderPipeline, AZ::Render::ProjectedShadowmapsPass* shadowmapPass) = 0;
+
         //! Gets the internally stored/cached atlas image
         virtual AZ::Data::Instance<RPI::AttachmentImage> GetAtlasImage() = 0;
         //! Gets the internally stored/cached esm atlas image
         virtual AZ::Data::Instance<RPI::AttachmentImage> GetEsmAtlasImage() = 0;
+
+        virtual void SetTemplateNames(AZ::Name projectedShadowmapsTemplateName, AZ::Name esmShadowmapsTemplateName) = 0;
     };
 }

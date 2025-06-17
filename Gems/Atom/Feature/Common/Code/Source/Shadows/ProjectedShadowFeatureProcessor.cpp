@@ -462,7 +462,7 @@ namespace AZ::Render
                     // AZ_Error("ProjectedShadowFeatureProcessor", false, "Found multiple projected shadowmap passes in pipeline.");
                     //              ^^^  WHY is this an error?
                     shadowmapPass->SetAtlasAttachmentImage(m_atlasImage);
-                    return RPI::PassFilterExecutionFlow::StopVisitingPasses;
+                    return RPI::PassFilterExecutionFlow::ContinueVisitingPasses;
                 }
                 shadowmapPass->SetAtlasAttachmentImage(m_atlasImage);
                 m_projectedShadowmapsPasses[renderPipeline] = shadowmapPass;
